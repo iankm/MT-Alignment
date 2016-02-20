@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 There are three python programs here (`-h` for usage):
 
 -`./align` aligns words.
@@ -22,3 +23,6 @@ aligned by Ulrich Germann:
   notation i-j means the word as position i of the French is 
   aligned to the word at position j of the English. Notation 
   i?j means they are probably aligned. Positions are 0-indexed.
+=======
+# MT-Alignment
+>>>>>>> 1022f6ffb16e23e389742bb4c4c13b811e4168f8
