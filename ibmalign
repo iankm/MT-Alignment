@@ -30,7 +30,7 @@ s_total = defaultdict(lambda: 0.0)
 
 l = 0
 #while t_old == t:
-for l in range(0, 1):
+for l in range(0, 10):
   l += 1
   sys.stderr.write("Iteration " + str(l) + '\n')
 
@@ -54,7 +54,12 @@ for l in range(0, 1):
 
 # print out alignments
 for (fs, es) in bitext:
-  for (i, f) in enumerate(fs): 
-    for (j, e) in enumerate(es):
-      sys.stdout.write("%i-%i " % (i,j))
+  for (j, e) in enumerate(es):
+    argmax = 0
+    max = 0
+    for (i, f) in enumerate(fs): 
+      if t[(f, e)] > max:
+        argmax = i
+        max = t[(f, e)]
+    sys.stdout.write("%i-%i " % (argmax,j))
   sys.stdout.write('\n')
