@@ -28,13 +28,11 @@ count = defaultdict(lambda: 0.0)
 total = defaultdict(lambda: 0.0)
 s_total = defaultdict(lambda: 0.0)
 
-# keep track of previous props for convergence check
-t_old = defaultdict(lambda: 0)
-
-i = 0
-while t_old == t:
-  i += 1
-  print "Iteration", i
+l = 0
+#while t_old == t:
+for l in range(0, 1):
+  l += 1
+  sys.stderr.write("Iteration " + str(l) + '\n')
 
   # for every sentence pair
   for (n, (fs, es)) in enumerate(bitext):
@@ -54,11 +52,9 @@ while t_old == t:
   for (k, (f, e)) in enumerate(count.keys()):
     t[(f, e)] = count[(f, e)] / total[f]
 
-  for (fs, es) in bitext:
-    for (i, f) in enumerate(fs): 
-      for (j, e) in enumerate(es):
-        #sys.stdout.write("%i-%i-%i" % (f,e,t[(f,e)]))
-        pass
-
-  # update old
-  t_old = t
+# print out alignments
+for (fs, es) in bitext:
+  for (i, f) in enumerate(fs): 
+    for (j, e) in enumerate(es):
+      sys.stdout.write("%i-%i " % (i,j))
+  sys.stdout.write('\n')
