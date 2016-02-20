@@ -19,26 +19,26 @@ e_data = "%s.%s" % (opts.train, opts.english)
 sys.stderr.write("Training with IBM Model 1..." + "\n")
 bitext = [[sentence.strip().split() for sentence in pair] for pair in zip(open(f_data), open(e_data))[:opts.num_sents]]
 
-e_keys = set()
+# initialize translation probability by 1 over the length of the english sentence
 for (k, (fs, es)) in enumerate(bitext):
-  for e in es:
-    e_keys.add(e)
-t = defaultdict(Decimal(1/len(e_keys)))
+    t = defaultdict(lambda: 1.0/len(es))
 
-#t = defaultdict(int)
 count = defaultdict(int)
 total = defaultdict(int)
 s_total = defaultdict(int)
+
 for (n, (fs, es)) in enumerate(bitext):
   for e in es:
+    # compute normalization
     s_total[e] = 0
     for f in fs:
       s_total[e] += t[(e, f)]
-      print(s_total[e])
-      for e in es:
-        for f in fs:
-          count[(e,f)] += t[(f, e)] / s_total[e]
-          total[f] += t[(f, e)] / s_total[e]
+  # collect counts
+  for e in es:
+    for f in fs:
+      count[(e,f)] += t[(f, e)] / s_total[e]
+      total[f] += t[(f, e)] / s_total[e]
+# estimate probabilities
 for (k, (f, e)) in enumerate(count.keys()):
   t[(f, e)] = count[(e, f)] / total[f]
 for (fs, es) in bitext:
