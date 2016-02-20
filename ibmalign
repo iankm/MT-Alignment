@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/local/bin/pypy
+
 import optparse
 import sys
 from collections import defaultdict
@@ -23,9 +24,9 @@ for (n, (fs, es)) in enumerate(bitext):
     english_vocab.add(e)
 t = defaultdict(lambda: 1.0 / len(english_vocab))
 
-count = defaultdict(int)
-total = defaultdict(int)
-s_total = defaultdict(int)
+count = defaultdict(lambda: 0.0)
+total = defaultdict(lambda: 0.0)
+s_total = defaultdict(lambda: 0.0)
 
 # keep track of previous props for convergence check
 t_old = defaultdict(lambda: 0)
@@ -35,25 +36,28 @@ while t_old == t:
   i += 1
   print "Iteration", i
 
+  # for every sentence pair
   for (n, (fs, es)) in enumerate(bitext):
     # compute normalization
     for e in es:
       s_total[e] = 0
       for f in fs:
-        s_total[e] += t[(e, f)]
+        s_total[e] += t[(f, e)]
+
     # collect counts
     for e in es:
       for f in fs:
-        count[(e,f)] += t[(f, e)] / s_total[e]
+        count[(f,e)] += t[(f, e)] / s_total[e]
         total[f] += t[(f, e)] / s_total[e]
 
   # estimate probabilities
   for (k, (f, e)) in enumerate(count.keys()):
-    t[(f, e)] = count[(e, f)] / total[f]
+    t[(f, e)] = count[(f, e)] / total[f]
+
   for (fs, es) in bitext:
     for (i, f) in enumerate(fs): 
       for (j, e) in enumerate(es):
-        #sys.stdout.write("%i-%i-%i" % (e,f,t[(e,f)]))
+        #sys.stdout.write("%i-%i-%i" % (f,e,t[(f,e)]))
         pass
 
   # update old
