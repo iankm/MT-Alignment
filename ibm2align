@@ -42,35 +42,37 @@ for l in range(0, 10):
 
   # for every sentence pair
   for (n, (fs, es)) in enumerate(bitext):
-    l_e = len(es)
-    l_f = len(fs)
-    i = 0
-    j = 0
+    i = -1
+    j = -1
     # compute normalization
     for e in es:
+      j += 1
       s_total[e] = 0
       for f in fs:
-        if (j, i, l_f, l_e) not in a:
-          a[(j, i, l_f, l_e)] = 1.0 / l_e
-        s_total[e] += t[(f, e)] * a[(j, i, l_f, l_e)]
+        i += 1
+        if (i, j, len(fs), len(es)) not in a:
+          a[(i, j, len(fs), len(es))] = 1.0 / len(fs)
+        s_total[e] += t[(f, e)] * a[(i, j, len(fs), len(es))]
 
-    i = 0
-    j = 0
+    i = -1
+    j = -1
     # collect counts
     for e in es:
+      j += 1
       for f in fs:
-        c = (t[(f, e)] * a[(j, i, l_f, l_e)]) / s_total[e]
+        i += 1
+        c = (t[(f, e)] * a[(i, j, len(fs), len(es))]) / s_total[e]
         count[(f,e)] += c
         total[f] += c
-        count_a[(j, i, l_f, l_e)] += c
-        total_a[(i, l_f, l_e)] += c
+        count_a[(i, j, len(fs), len(es))] += c
+        total_a[(j, len(fs), len(es))] += c
 
   # estimate probabilities
   for (k, (f, e)) in enumerate(count.keys()):
     t[(f, e)] = count[(f, e)] / total[f]
 
-  for (k, (j, i, l_f, l_e)) in enumerate(count_a.keys()):
-    a[(j, i, l_f, l_e)] = count_a[(j, i, l_f, l_e)] / total_a[(i, l_f, l_e)]
+  for (k, (i, j, l_f, l_e)) in enumerate(count_a.keys()):
+    a[(i, j, l_f, l_e)] = count_a[(i, j, l_f, l_e)] / total_a[(j, l_f, l_e)]
 
 # print out alignments
 for (fs, es) in bitext:
@@ -78,10 +80,10 @@ for (fs, es) in bitext:
     argmax = 0
     max = 0
     for (i, f) in enumerate(fs): 
-      if (j, i, len(fs), len(es)) not in a:
-        a[(j, i, len(fs), len(es))] = 1.0 / len(es)
-      if t[(f, e)] * a[(j, i, len(fs), len(es))] > max:
+      if (i, j, len(fs), len(es)) not in a:
+        a[(i, j, len(fs), len(es))] = 1.0 / len(es)
+      if t[(f, e)] * a[(i, j, len(fs), len(es))] > max:
         argmax = i
-        max = t[(f, e)] * a[(j, i, len(fs), len(es))]
+        max = t[(f, e)] * a[(i, j, len(fs), len(es))]
     sys.stdout.write("%i-%i " % (argmax,j))
   sys.stdout.write('\n')
