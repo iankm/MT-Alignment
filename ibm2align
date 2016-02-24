@@ -24,14 +24,8 @@ for (n, (fs, es)) in enumerate(bitext):
     english_vocab.add(e)
 t = defaultdict(lambda: 1.0 / len(english_vocab))
 
-a = defaultdict(lambda: 0.0)
-for (n, (fs, es)) in enumerate(bitext):
-  l_e = len(es)
-  l_f = len(fs)
-  for j in range(1,l_e + 1):
-    for i in range(1, l_f + 1):
-      a[(j, i, l_f, l_e)] = defaultdict(lambda:1.0 / (l_f + 1))
-
+# initialize alignment probabilities
+a = {}
 
 count = defaultdict(lambda: 0.0)
 total = defaultdict(lambda: 0.0)
@@ -44,30 +38,27 @@ total_a = defaultdict(lambda: 0.0)
 l = 0
 #while t_old == t:
 for l in range(0, 10):
-  l += 1
-  sys.stderr.write("Iteration " + str(l) + '\n')
+  sys.stderr.write("Iteration " + str(l + 1) + '\n')
 
   # for every sentence pair
   for (n, (fs, es)) in enumerate(bitext):
     l_e = len(es)
-    f_e = len(fs)
+    l_f = len(fs)
     i = 0
     j = 0
     # compute normalization
     for e in es:
-      j += 1
       s_total[e] = 0
       for f in fs:
-        i += 1
+        if (j, i, l_f, l_e) not in a:
+          a[(j, i, l_f, l_e)] = 1.0 / l_e
         s_total[e] += t[(f, e)] * a[(j, i, l_f, l_e)]
 
     i = 0
     j = 0
     # collect counts
     for e in es:
-      j += 1
       for f in fs:
-        i += 1
         c = (t[(f, e)] * a[(j, i, l_f, l_e)]) / s_total[e]
         count[(f,e)] += c
         total[f] += c
@@ -78,7 +69,7 @@ for l in range(0, 10):
   for (k, (f, e)) in enumerate(count.keys()):
     t[(f, e)] = count[(f, e)] / total[f]
 
-  for (k, (j, i, l_f, l_e)) in enumerate(count+a.keys()):
+  for (k, (j, i, l_f, l_e)) in enumerate(count_a.keys()):
     a[(j, i, l_f, l_e)] = count_a[(j, i, l_f, l_e)] / total_a[(j, l_f, l_e)]
 
 # print out alignments
@@ -87,8 +78,10 @@ for (fs, es) in bitext:
     argmax = 0
     max = 0
     for (i, f) in enumerate(fs): 
-      if t[(f, e)] > max:
+      if (j, i, len(fs), len(es)) not in a:
+        a[(j, i, len(fs), len(es))] = 1.0 / len(es)
+      if t[(f, e)] * a[(j, i, len(fs), len(es))] > max:
         argmax = i
-        max = t[(f, e)]
+        max = t[(f, e)] * a[(j, i, len(fs), len(es))]
     sys.stdout.write("%i-%i " % (argmax,j))
   sys.stdout.write('\n')
