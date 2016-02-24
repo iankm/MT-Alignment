@@ -14,7 +14,7 @@ optparser.add_option("-n", "--num_sentences", dest="num_sents", default=sys.maxi
 f_data = "%s.%s" % (opts.train, opts.french)
 e_data = "%s.%s" % (opts.train, opts.english)
 
-sys.stderr.write("Training with IBM Model 2..." + "\n")
+sys.stderr.write("Training with HMM..." + "\n")
 bitext = [[sentence.strip().split() for sentence in pair] for pair in zip(open(f_data), open(e_data))[:opts.num_sents]]
 
 # initialize translation probabilities
@@ -42,21 +42,26 @@ for l in range(0, 10):
 
   # for every sentence pair
   for (n, (fs, es)) in enumerate(bitext):
+    j = -1
     # compute normalization
-    for j in range(0, len(es)):
-      e = es[j]
+    for e in es:
+      j += 1
       s_total[e] = 0
-      for i in range(0, len(fs)):
-        f = fs[i]
+
+      i = -1
+      for f in fs:
+        i += 1
         if (i, j, len(fs), len(es)) not in a:
           a[(i, j, len(fs), len(es))] = 1.0 / len(fs)
         s_total[e] += t[(f, e)] * a[(i, j, len(fs), len(es))]
 
+    j = -1
     # collect counts
-    for j in range(0, len(es)):
-      e = es[j]
-      for i in range(0, len(fs)):
-        f = fs[i]
+    for e in es:
+      j += 1
+      i = -1
+      for f in fs:
+        i += 1
         c = (t[(f, e)] * a[(i, j, len(fs), len(es))]) / s_total[e]
         count[(f,e)] += c
         total[f] += c
