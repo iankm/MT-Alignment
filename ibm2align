@@ -71,12 +71,15 @@ for l in range(0, 10):
         c = (t[(f, e)] * a[(j, i, l_f, l_e)]) / s_total[e]
         count[(f,e)] += c
         total[f] += c
-        count_a += c
-        total_a += c
+        count_a[(j, i, l_f, l_e)] += c
+        total_a[(j, l_f, l_e)] += c
 
   # estimate probabilities
   for (k, (f, e)) in enumerate(count.keys()):
     t[(f, e)] = count[(f, e)] / total[f]
+
+  for (k, (j, i, l_f, l_e)) in enumerate(count+a.keys()):
+    a[(j, i, l_f, l_e)] = count_a[(j, i, l_f, l_e)] / total_a[(j, l_f, l_e)]
 
 # print out alignments
 for (fs, es) in bitext:
