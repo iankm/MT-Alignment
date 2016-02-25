@@ -4,6 +4,8 @@ import optparse
 import sys
 from collections import defaultdict
 import random
+import math
+import math
 
 optparser = optparse.OptionParser()
 optparser.add_option("-d", "--data", dest="train", default="data/hansards", help="Data filename prefix (default=data)")
@@ -23,7 +25,7 @@ english_vocab = set()
 for (n, (fs, es)) in enumerate(bitext):
   for e in es:
     english_vocab.add(e)
-t = defaultdict(lambda: 1.0 / len(english_vocab))
+t = defaultdict(lambda: math.log(1.0 / len(english_vocab)))
 
 # initialize alignment probabilities
 a = {}
@@ -35,10 +37,19 @@ s_total = defaultdict(lambda: 0.0)
 count_a = defaultdict(lambda: 0.0)
 total_a = defaultdict(lambda: 0.0)
 
+def logadd(x, y):
+  if x == 0.0:
+    return y
+  elif y == 0.0:
+    return x
+  elif y <= x:
+    return x + math.log(1 + math.exp(y - x))
+  else:
+    return y + math.log(1 + math.exp(x - y))
 
 l = 0
 #while t_old == t:
-for l in range(0, 10):
+for l in range(0, 50):
   sys.stderr.write("Iteration " + str(l + 1) + '\n')
 
   # for every sentence pair
@@ -46,56 +57,66 @@ for l in range(0, 10):
     # initialize a
     for j in range(-1, len(fs)):
         for i in range(-1, len(fs)):
-            a[(i, j, len(fs))] = 1.0 / len(fs)
+          if (i, j, len(fs)) not in a:
+            a[(i, j, len(fs))] = math.log(1.0 / len(fs))
 
     # compute alignment probabilities
-    Q = [[t[(fs[q], es[0])] * a[(q, -1, len(fs))] for q in range(0, len(fs))]]
+    Q = [[t[(fs[q], es[0])] + a[(q, - 1, len(fs))] for q in range(0, len(fs))]]
     for j in range(1, len(es)):
       e = es[j]
       Q.append([])
       for i in range(0, len(fs)):
         f = fs[i]
-        Q[j].append(t[(f, e)] * max([a[(i, q, len(fs))] * Q[j - 1][q] for q in range(0, len(fs))]))
+        Q[j].append(t[(f, e)] + max([a[(i, q, len(fs))] + Q[j - 1][q] for q in range(0, len(fs))]))
 
     # compute normalization
+    qnorm = []
+    for j in range(0, len(es)):
+      qnorm.append(0)
+      for q in range(0, len(fs)):
+        qnorm[j] = logadd(qnorm[j], Q[j][q])
     for j in range(0, len(es)):
       e = es[j]
       s_total[e] = 0
       for i in range(0, len(fs)):
         f = fs[i]
-        s_total[e] += Q(j, i)
+        s_total[e] = logadd(Q[j][i] - qnorm[j], s_total[e])
 
     # collect counts
     for j in range(0, len(es)):
       e = es[j]
       for i in range(0, len(fs)):
         f = fs[i]
-        c = Q(j, i) / s_total[e]
-        count[(f,e)] += c
-        total[f] += c
+        c = Q[j][i] - s_total[e] - qnorm[j]
+        count[(f,e)] = logadd(c, count[(f, e)])
+        total[f] = logadd(c, total[f])
         
-        k = max(enumerate(Q[j - 1]), key = lambda x: x[1])[0]
-        count_a[i - k] += c
+        #k = max(enumerate(Q[j - 1]), key = lambda x: x[1])[0]
+        for k in range(0, len(fs)):
+          count_a[i - k] = logadd(c + Q[j - 1][k] - qnorm[j - 1], count_a[i - k])
 
-  # estimate probabilities
+  # estimate translation probabilities
   for (k, (f, e)) in enumerate(count.keys()):
-    t[(f, e)] = count[(f, e)] / total[f]
+    t[(f, e)] = count[(f, e)] - total[f]
 
-  for (k, (i, prev_a, l_e)) in enumerate(a.keys()):
-    a[(i, prev_a, l_e)] = count_a[i - prev_a] / sum([count_a[q - prev_a] for q in range(0, l_e)])
+  # estimate alignment probabilities
+  for (k, (i, prev_a, l_f)) in enumerate(a.keys()):
+    denom = 0
+    for q in range(0, l_f):
+      denom = logadd(denom, count_a[q - prev_a])
+    a[(i, prev_a, l_f)] = count_a[i - prev_a] - denom
 
 # print out alignments
 for (fs, es) in bitext:
-  alignment = []
-  for (j, e) in enumerate(es):
-    prev_a = -1 if j == 0 else alignment[j - 1]
-    options = {}
-    for (i, f) in enumerate(fs): 
-      if (i, prev_a, len(fs)) not in a:
-        a[(i, prev_a, len(fs))] = 1.0 / len(es)
-      options[i] = t[(f, e)] * a[(i, prev_a, len(fs))]
-    maxes = [x for x in options.keys() if options[x] == max(options.values())]
-    argmax = random.choice(maxes)
-    alignment.append(argmax)
+  Q = [[t[(fs[q], es[0])] + a[(q, - 1, len(fs))] for q in range(0, len(fs))]]
+  for j in range(1, len(es)):
+    e = es[j]
+    Q.append([])
+    for i in range(0, len(fs)):
+      f = fs[i]
+      Q[j].append(t[(f, e)] + max([a[(i, q, len(fs))] + Q[j - 1][q] for q in range(0, len(fs))]))
+
+  for j in range(0, len(es)):
+    argmax = max(enumerate(Q[j]), key = lambda x: x[1])[0]
     sys.stdout.write("%i-%i " % (argmax,j))
   sys.stdout.write('\n')
