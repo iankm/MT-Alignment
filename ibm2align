@@ -40,6 +40,13 @@ l = 0
 for l in range(0, 10):
   sys.stderr.write("Iteration " + str(l + 1) + '\n')
 
+  count = defaultdict(lambda: 0.0)
+  total = defaultdict(lambda: 0.0)
+  s_total = defaultdict(lambda: 0.0)
+  # adding alignment probability distribution
+  count_a = defaultdict(lambda: 0.0)
+  total_a = defaultdict(lambda: 0.0)
+  
   # for every sentence pair
   for (n, (fs, es)) in enumerate(bitext):
     # compute normalization
@@ -49,7 +56,7 @@ for l in range(0, 10):
       for i in range(0, len(fs)):
         f = fs[i]
         if (i, j, len(fs), len(es)) not in a:
-          a[(i, j, len(fs), len(es))] = 1.0 / len(fs)
+          a[(i, j, len(fs), len(es))] = 1.0 / (len(es) + 1)
         s_total[e] += t[(f, e)] * a[(i, j, len(fs), len(es))]
 
     # collect counts
