@@ -64,7 +64,7 @@ for l in range(0, 10):
     for j in range(0, len(es)):
       Q.append([])
       for i in range(0, len(fs)):
-        Q[j].append(t[(f, e)] * max([q * a[(i, 
+        Q[j].append(t[(f, e)] * max([a[(i, q, len(fs))] * Q[j - 1, q] for q in range(0, len(fs))]))
 
     # compute normalization
     for j in range(0, len(es)):
