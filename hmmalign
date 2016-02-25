@@ -59,12 +59,19 @@ for l in range(0, 10):
       alignment.append(random.choice(maxes))
     '''
 
+    # initialize a
+    for j in range(-1, len(fs)):
+        for i in range(-1, len(fs)):
+            a[(i, j, len(fs))] = 1.0 / len(fs)
+
     # compute alignment probabilities
-    Q = []
-    for j in range(0, len(es)):
+    Q = [[t[(fs[q], es[0])] * a[(q, -1, len(fs))] for q in range(0, len(fs))]]
+    for j in range(1, len(es)):
+      e = es[j]
       Q.append([])
       for i in range(0, len(fs)):
-        Q[j].append(t[(f, e)] * max([a[(i, q, len(fs))] * Q[j - 1, q] for q in range(0, len(fs))]))
+        f = fs[i]
+        Q[j].append(t[(f, e)] * max([a[(i, q, len(fs))] * Q[j - 1][q] for q in range(0, len(fs))]))
 
     # compute normalization
     for j in range(0, len(es)):
