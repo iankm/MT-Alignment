@@ -61,7 +61,7 @@ for l in range(0, 10):
             a[(i, j, len(fs))] = math.log(1.0 / len(fs))
 
     # compute alignment probabilities
-    Q = [[t[(fs[q], es[0])] + a[(q, -1, len(fs))] for q in range(0, len(fs))]]
+    Q = [[t[(fs[q], es[0])] + a[(q, - 1, len(fs))] for q in range(0, len(fs))]]
     for j in range(1, len(es)):
       e = es[j]
       Q.append([])
@@ -103,7 +103,7 @@ for l in range(0, 10):
 
 # print out alignments
 for (fs, es) in bitext:
-  Q = [[t[(fs[q], es[0])] + a[(q, -1, len(fs))] for q in range(0, len(fs))]]
+  Q = [[t[(fs[q], es[0])] + a[(q, - 1, len(fs))] for q in range(0, len(fs))]]
   for j in range(1, len(es)):
     e = es[j]
     Q.append([])
