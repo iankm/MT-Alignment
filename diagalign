@@ -1,0 +1,85 @@
+#!/usr/local/bin/pypy
+
+import optparse
+import sys
+from collections import defaultdict
+
+optparser = optparse.OptionParser()
+optparser.add_option("-d", "--data", dest="train", default="data/hansards", help="Data filename prefix (default=data)")
+optparser.add_option("-e", "--english", dest="english", default="e", help="Suffix of English filename (default=e)")
+optparser.add_option("-f", "--french", dest="french", default="f", help="Suffix of French filename (default=f)")
+optparser.add_option("-t", "--threshold", dest="threshold", default=0.5, type="float", help="Threshold for aligning with Dice's coefficient (default=0.5)")
+optparser.add_option("-n", "--num_sentences", dest="num_sents", default=sys.maxint, type="int", help="Number of sentences to use for training and alignment")
+(opts, _) = optparser.parse_args()
+f_data = "%s.%s" % (opts.train, opts.french)
+e_data = "%s.%s" % (opts.train, opts.english)
+
+sys.stderr.write("Training with IBM Model 2..." + "\n")
+bitext = [[sentence.strip().split() for sentence in pair] for pair in zip(open(f_data), open(e_data))[:opts.num_sents]]
+
+# initialize translation probabilities
+english_vocab = set()
+for (n, (fs, es)) in enumerate(bitext):
+  for e in es:
+    english_vocab.add(e)
+t = defaultdict(lambda: 1.0 / len(english_vocab))
+
+# initialize alignment probabilities
+a = {}
+
+count = defaultdict(lambda: 0.0)
+total = defaultdict(lambda: 0.0)
+s_total = defaultdict(lambda: 0.0)
+# adding alignment probability distribution
+count_a = defaultdict(lambda: 0.0)
+total_a = defaultdict(lambda: 0.0)
+
+
+l = 0
+#while t_old == t:
+for l in range(0, 10):
+  sys.stderr.write("Iteration " + str(l + 1) + '\n')
+
+  # for every sentence pair
+  for (n, (fs, es)) in enumerate(bitext):
+    # compute normalization
+    for j in range(0, len(es)):
+      e = es[j]
+      s_total[e] = 0
+      for i in range(0, len(fs)):
+        f = fs[i]
+        if (i, j, len(fs), len(es)) not in a:
+          a[(i, j, len(fs), len(es))] = 1.0 / len(fs)
+        s_total[e] += t[(f, e)] * a[(i, j, len(fs), len(es))]
+
+    # collect counts
+    for j in range(0, len(es)):
+      e = es[j]
+      for i in range(0, len(fs)):
+        f = fs[i]
+        c = (t[(f, e)] * a[(i, j, len(fs), len(es))]) / s_total[e]
+        count[(f,e)] += c
+        total[f] += c
+        count_a[(i, j, len(fs), len(es))] += c
+        total_a[(j, len(fs), len(es))] += c
+
+  # estimate probabilities
+  for (k, (f, e)) in enumerate(count.keys()):
+    t[(f, e)] = count[(f, e)] / total[f]
+
+  for (k, (i, j, l_f, l_e)) in enumerate(count_a.keys()):
+    a[(i, j, l_f, l_e)] = count_a[(i, j, l_f, l_e)] / total_a[(j, l_f, l_e)]
+
+# print out alignments
+for (fs, es) in bitext:
+  for (j, e) in enumerate(es):
+    argmax = 0
+    max = 0
+    for (i, f) in enumerate(fs): 
+      if (i, j, len(fs), len(es)) not in a:
+        a[(i, j, len(fs), len(es))] = 1.0 / len(es)
+      if t[(f, e)] * a[(i, j, len(fs), len(es))] > max:
+        argmax = i
+        max = t[(f, e)] * a[(i, j, len(fs), len(es))]
+    sys.stdout.write("%i-%i " % (argmax,j))
+  sys.stdout.write('\n')
