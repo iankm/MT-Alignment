@@ -43,6 +43,7 @@ for l in range(0, 10):
 
   # for every sentence pair
   for (n, (fs, es)) in enumerate(bitext):
+    '''
     # compute most likely alignment
     alignment = []
     for j in range(0, len(es)):
@@ -53,9 +54,17 @@ for l in range(0, 10):
         f = fs[i]
         if (i, prev_a, len(es)) not in a:
           a[(i, prev_a, len(es))] = 1.0 / len(fs)
-        options[i] = t[(f, e)] * a[(i, prev_a, len(es))]
+        options[i] = t[(f, e)] * a[(i, prev_a, len(fs))]
       maxes = [x for x in options.keys() if options[x] == max(options.values())]
       alignment.append(random.choice(maxes))
+    '''
+
+    # compute alignment probabilities
+    Q = []
+    for j in range(0, len(es)):
+      Q.append([])
+      for i in range(0, len(fs)):
+        Q[j].append(t[(f, e)] * max([q * a[(i, 
 
     # compute normalization
     for j in range(0, len(es)):
@@ -64,9 +73,7 @@ for l in range(0, 10):
       s_total[e] = 0
       for i in range(0, len(fs)):
         f = fs[i]
-        if (i, prev_a, len(es)) not in a:
-          a[(i, prev_a, len(es))] = 1.0 / len(fs)
-        s_total[e] += t[(f, e)] * a[(i, prev_a, len(es))]
+        s_total[e] += t[(f, e)] * a[(i, prev_a, len(fs))]
 
     # collect counts
     for j in range(0, len(es)):
@@ -74,7 +81,7 @@ for l in range(0, 10):
       e = es[j]
       for i in range(0, len(fs)):
         f = fs[i]
-        c = (t[(f, e)] * a[(i, prev_a, len(es))]) / s_total[e]
+        c = (t[(f, e)] * a[(i, prev_a, len(fs))]) / s_total[e]
         count[(f,e)] += c
         total[f] += c
         count_a[i - prev_a] += c
@@ -93,9 +100,9 @@ for (fs, es) in bitext:
     prev_a = -1 if j == 0 else alignment[j - 1]
     options = {}
     for (i, f) in enumerate(fs): 
-      if (i, prev_a, len(es)) not in a:
-        a[(i, prev_a, len(es))] = 1.0 / len(es)
-      options[i] = t[(f, e)] * a[(i, prev_a, len(es))]
+      if (i, prev_a, len(fs)) not in a:
+        a[(i, prev_a, len(fs))] = 1.0 / len(es)
+      options[i] = t[(f, e)] * a[(i, prev_a, len(fs))]
     maxes = [x for x in options.keys() if options[x] == max(options.values())]
     argmax = random.choice(maxes)
     alignment.append(argmax)
