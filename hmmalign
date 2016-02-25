@@ -70,25 +70,30 @@ for l in range(0, 10):
         Q[j].append(t[(f, e)] + max([a[(i, q, len(fs))] + Q[j - 1][q] for q in range(0, len(fs))]))
 
     # compute normalization
+    qnorm = []
+    for j in range(0, len(es)):
+      qnorm.append(0)
+      for q in range(0, len(fs)):
+        qnorm[j] = logadd(qnorm[j], Q[j][q])
     for j in range(0, len(es)):
       e = es[j]
       s_total[e] = 0
       for i in range(0, len(fs)):
         f = fs[i]
-        s_total[e] = logadd(Q[j][i], s_total[e])
+        s_total[e] = logadd(Q[j][i] - qnorm[j], s_total[e])
 
     # collect counts
     for j in range(0, len(es)):
       e = es[j]
       for i in range(0, len(fs)):
         f = fs[i]
-        c = Q[j][i] - s_total[e]
+        c = Q[j][i] - s_total[e] - qnorm[j]
         count[(f,e)] = logadd(c, count[(f, e)])
         total[f] = logadd(c, total[f])
         
         #k = max(enumerate(Q[j - 1]), key = lambda x: x[1])[0]
         for k in range(0, len(fs)):
-          count_a[i - k] = logadd(c + Q[j - 1][k], count_a[i - k])
+          count_a[i - k] = logadd(c + Q[j - 1][k] - qnorm[j - 1], count_a[i - k])
 
   # estimate translation probabilities
   for (k, (f, e)) in enumerate(count.keys()):
