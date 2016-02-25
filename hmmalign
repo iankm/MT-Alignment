@@ -3,6 +3,7 @@
 import optparse
 import sys
 from collections import defaultdict
+import random
 
 optparser = optparse.OptionParser()
 optparser.add_option("-d", "--data", dest="train", default="data/hansards", help="Data filename prefix (default=data)")
@@ -42,49 +43,61 @@ for l in range(0, 10):
 
   # for every sentence pair
   for (n, (fs, es)) in enumerate(bitext):
-    j = -1
+    # compute most likely alignment
+    alignment = []
+    for j in range(0, len(es)):
+      e = es[j]
+      prev_a = -1 if j == 0 else alignment[j - 1]
+      options = {}
+      for i in range(0, len(fs)):
+        f = fs[i]
+        if (i, prev_a, len(es)) not in a:
+          a[(i, prev_a, len(es))] = 1.0 / len(fs)
+        options[i] = t[(f, e)] * a[(i, prev_a, len(es))]
+      maxes = [x for x in options.keys() if options[x] == max(options.values())]
+      alignment.append(random.choice(maxes))
+
     # compute normalization
-    for e in es:
-      j += 1
+    for j in range(0, len(es)):
+      prev_a = -1 if j == 0 else alignment[j - 1]
+      e = es[j]
       s_total[e] = 0
+      for i in range(0, len(fs)):
+        f = fs[i]
+        if (i, prev_a, len(es)) not in a:
+          a[(i, prev_a, len(es))] = 1.0 / len(fs)
+        s_total[e] += t[(f, e)] * a[(i, prev_a, len(es))]
 
-      i = -1
-      for f in fs:
-        i += 1
-        if (i, j, len(fs), len(es)) not in a:
-          a[(i, j, len(fs), len(es))] = 1.0 / len(fs)
-        s_total[e] += t[(f, e)] * a[(i, j, len(fs), len(es))]
-
-    j = -1
     # collect counts
-    for e in es:
-      j += 1
-      i = -1
-      for f in fs:
-        i += 1
-        c = (t[(f, e)] * a[(i, j, len(fs), len(es))]) / s_total[e]
+    for j in range(0, len(es)):
+      prev_a = -1 if j == 0 else alignment[j - 1]
+      e = es[j]
+      for i in range(0, len(fs)):
+        f = fs[i]
+        c = (t[(f, e)] * a[(i, prev_a, len(es))]) / s_total[e]
         count[(f,e)] += c
         total[f] += c
-        count_a[(i, j, len(fs), len(es))] += c
-        total_a[(j, len(fs), len(es))] += c
+        count_a[i - prev_a] += c
 
   # estimate probabilities
   for (k, (f, e)) in enumerate(count.keys()):
     t[(f, e)] = count[(f, e)] / total[f]
 
-  for (k, (i, j, l_f, l_e)) in enumerate(count_a.keys()):
-    a[(i, j, l_f, l_e)] = count_a[(i, j, l_f, l_e)] / total_a[(j, l_f, l_e)]
+  for (k, (i, prev_a, l_e)) in enumerate(a.keys()):
+    a[(i, prev_a, l_e)] = count_a[i - prev_a] / sum([count_a[q - prev_a] for q in range(0, l_e)])
 
 # print out alignments
 for (fs, es) in bitext:
+  alignment = []
   for (j, e) in enumerate(es):
-    argmax = 0
-    max = 0
+    prev_a = -1 if j == 0 else alignment[j - 1]
+    options = {}
     for (i, f) in enumerate(fs): 
-      if (i, j, len(fs), len(es)) not in a:
-        a[(i, j, len(fs), len(es))] = 1.0 / len(es)
-      if t[(f, e)] * a[(i, j, len(fs), len(es))] > max:
-        argmax = i
-        max = t[(f, e)] * a[(i, j, len(fs), len(es))]
+      if (i, prev_a, len(es)) not in a:
+        a[(i, prev_a, len(es))] = 1.0 / len(es)
+      options[i] = t[(f, e)] * a[(i, prev_a, len(es))]
+    maxes = [x for x in options.keys() if options[x] == max(options.values())]
+    argmax = random.choice(maxes)
+    alignment.append(argmax)
     sys.stdout.write("%i-%i " % (argmax,j))
   sys.stdout.write('\n')
