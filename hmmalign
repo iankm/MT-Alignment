@@ -43,22 +43,6 @@ for l in range(0, 10):
 
   # for every sentence pair
   for (n, (fs, es)) in enumerate(bitext):
-    '''
-    # compute most likely alignment
-    alignment = []
-    for j in range(0, len(es)):
-      e = es[j]
-      prev_a = -1 if j == 0 else alignment[j - 1]
-      options = {}
-      for i in range(0, len(fs)):
-        f = fs[i]
-        if (i, prev_a, len(es)) not in a:
-          a[(i, prev_a, len(es))] = 1.0 / len(fs)
-        options[i] = t[(f, e)] * a[(i, prev_a, len(fs))]
-      maxes = [x for x in options.keys() if options[x] == max(options.values())]
-      alignment.append(random.choice(maxes))
-    '''
-
     # initialize a
     for j in range(-1, len(fs)):
         for i in range(-1, len(fs)):
@@ -75,23 +59,23 @@ for l in range(0, 10):
 
     # compute normalization
     for j in range(0, len(es)):
-      prev_a = -1 if j == 0 else alignment[j - 1]
       e = es[j]
       s_total[e] = 0
       for i in range(0, len(fs)):
         f = fs[i]
-        s_total[e] += t[(f, e)] * a[(i, prev_a, len(fs))]
+        s_total[e] += Q(j, i)
 
     # collect counts
     for j in range(0, len(es)):
-      prev_a = -1 if j == 0 else alignment[j - 1]
       e = es[j]
       for i in range(0, len(fs)):
         f = fs[i]
-        c = (t[(f, e)] * a[(i, prev_a, len(fs))]) / s_total[e]
+        c = Q(j, i) / s_total[e]
         count[(f,e)] += c
         total[f] += c
-        count_a[i - prev_a] += c
+        
+        k = max(enumerate(Q[j - 1]), key = lambda x: x[1])[0]
+        count_a[i - k] += c
 
   # estimate probabilities
   for (k, (f, e)) in enumerate(count.keys()):
