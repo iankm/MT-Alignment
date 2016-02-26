@@ -37,6 +37,7 @@ s_total = defaultdict(lambda: 0.0)
 count_a = defaultdict(lambda: 0.0)
 total_a = defaultdict(lambda: 0.0)
 
+# log addition to prevent alignment distribution converging to 0
 def logadd(x, y):
   if x == 0.0:
     return y
@@ -48,8 +49,10 @@ def logadd(x, y):
     return y + math.log(1 + math.exp(x - y))
 
 l = 0
-#while t_old == t:
-for l in range(0, 30):
+
+# HMModel more altered by number of iterations than IBM models, higher
+# iterations yield significantly improved results
+for l in range(0, 50):
   sys.stderr.write("Iteration " + str(l + 1) + '\n')
 
   # for every sentence pair
@@ -58,9 +61,11 @@ for l in range(0, 30):
     for j in range(-1, len(fs)):
         for i in range(-1, len(fs)):
           if (i, j, len(fs)) not in a:
+            # math log prevents convergence to 0
             a[(i, j, len(fs))] = math.log(1.0 / len(fs))
 
     # compute alignment probabilities
+    # dynamic programming
     Q = [[t[(fs[q], es[0])] + a[(q, - 1, len(fs))] for q in range(0, len(fs))]]
     for j in range(1, len(es)):
       e = es[j]
@@ -80,6 +85,7 @@ for l in range(0, 30):
       s_total[e] = 0
       for i in range(0, len(fs)):
         f = fs[i]
+        # logadd applied to computations for consistency
         s_total[e] = logadd(Q[j][i] - qnorm[j], s_total[e])
 
     # collect counts
